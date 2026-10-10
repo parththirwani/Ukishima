@@ -9,11 +9,14 @@ if [ -z "$WPDIR" ]; then
     # No explicit folder set: adopt an existing collection in the usual spots.
     # Two or more images counts as a collection, a single stray file does not,
     # so an incidental picture never hijacks the default.
-    for cand in "$HOME/Pictures/Wallpapers" "$HOME/Pictures/wallpapers" "$HOME/Wallpapers" "$HOME/wallpapers"; do
+    for cand in "$HOME/.config/omarchy/current/theme/backgrounds" "$HOME/Pictures/Wallpapers" "$HOME/Pictures/wallpapers" "$HOME/Wallpapers" "$HOME/wallpapers"; do
         [ -d "$cand" ] || continue
         n=$(find "$cand" -maxdepth 1 -type f \( -iname '*.jpg' -o -iname '*.png' -o -iname '*.gif' -o -iname '*.webp' -o -iname '*.mp4' -o -iname '*.webm' -o -iname '*.mkv' -o -iname '*.mov' \) | awk 'NR<=2' | wc -l)
         if [ "$n" -ge 2 ]; then WPDIR="$cand"; break; fi
     done
+    if [ -z "$WPDIR" ] && [ -d "$HOME/.config/omarchy/current/theme/backgrounds" ]; then
+        WPDIR="$HOME/.config/omarchy/current/theme/backgrounds"
+    fi
     [ -n "$WPDIR" ] || WPDIR="$HOME/Pictures/Wallpapers"
 fi
 RESOLVED="${XDG_STATE_HOME:-$HOME/.local/state}/ukishima-wallpaper-dir"
@@ -199,6 +202,29 @@ map_put_all() {
 
 make_still() {
     ffmpeg -y -loglevel error -i "$1" -frames:v 1 -f image2 -c:v png "$2.tmp" && mv "$2.tmp" "$2"
+}
+
+omarchy_set_background() {
+    local pic="$1"
+    local setter="$HOME/.local/share/omarchy/bin/omarchy-theme-bg-set"
+    if [ -x "$setter" ]; then
+        "$setter" "$pic"
+        return $?
+    fi
+    ln -nsf "$pic" "$HOME/.config/omarchy/current/background"
+    pkill -x swaybg 2>/dev/null || true
+    setsid uwsm-app -- swaybg -i "$HOME/.config/omarchy/current/background" -m fill >/dev/null 2>&1 &
+}
+
+apply_without_awww() {
+    local pic="$1"
+    if is_video "$pic"; then
+        exit 1
+    fi
+    omarchy_set_background "$pic" || exit 1
+    map_put_all "$pic"
+    palette_update
+    exit 0
 }
 
 # Animated picks wave in over their own first frame, then swap to the live
@@ -387,6 +413,21 @@ target=""
 if [ "$cmd" = "regen" ]; then
     palette_update
     exit 0
+fi
+
+if ! command -v awww >/dev/null 2>&1; then
+    if [ "$cmd" = "init" ]; then
+        pic=$(cat "$STATE" 2>/dev/null || true)
+        [ -n "$pic" ] && [ -f "$pic" ] && apply_without_awww "$pic"
+        exit 0
+    elif [ "$cmd" = "set" ]; then
+        pic="${2:-}"
+        [ -f "$pic" ] || exit 1
+        apply_without_awww "$pic"
+    else
+        pic=$(pop_bag) || exit 0
+        apply_without_awww "$pic"
+    fi
 fi
 
 daemon_was_running=true

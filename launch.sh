@@ -6,6 +6,7 @@
 # working set. This script resolves its own location, so it works from any
 # install path (just point your autostart at it).
 export MALLOC_CONF="background_thread:true,dirty_decay_ms:100,muzzy_decay_ms:100"
+export PATH="$HOME/.local/bin:$PATH"
 # QtMultimedia's FFmpeg backend announces its build on start and dumps an
 # "Input #0, ..." block for every video it opens (the wallpaper preview), and
 # both land in the session log on every reload. Both are info-level messages

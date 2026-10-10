@@ -6,6 +6,9 @@ STATE="${XDG_STATE_HOME:-$HOME/.local/state}"
 flags="$STATE/ukishima/flags.json"
 raw=$(jq -r '.wallpaperDir // ""' "$flags" 2>/dev/null || echo "")
 [ -n "$raw" ] || raw=$(cat "$STATE/ukishima-wallpaper-dir" 2>/dev/null || true)
+if [ -z "$raw" ] && [ -d "$HOME/.config/omarchy/current/theme/backgrounds" ]; then
+    raw="$HOME/.config/omarchy/current/theme/backgrounds"
+fi
 [ -n "$raw" ] || raw="$HOME/Pictures/Wallpapers"
 # Drop any trailing slash so a flags/state trailing-slash drift cannot spawn a
 # second cache directory (the folder hash must match the pill's listing hash).
