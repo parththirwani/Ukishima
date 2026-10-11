@@ -216,6 +216,15 @@ omarchy_set_background() {
     setsid uwsm-app -- swaybg -i "$HOME/.config/omarchy/current/background" -m fill >/dev/null 2>&1 &
 }
 
+sync_omarchy_background() {
+    local pic="$1" show="$1"
+    if is_video "$pic"; then
+        make_still "$pic" "$STILL" || return 0
+        show="$STILL"
+    fi
+    omarchy_set_background "$show" || true
+}
+
 apply_without_awww() {
     local pic="$1"
     if is_video "$pic"; then
@@ -399,6 +408,8 @@ restore_all() {
     [ "$any" = true ] || exit 0
     sync_videos
     palette_update
+    pic=$(cat "$STATE" 2>/dev/null || true)
+    [ -n "$pic" ] && [ -f "$pic" ] && sync_omarchy_background "$pic"
     exit 0
 }
 
@@ -492,3 +503,4 @@ fi
 apply_visual "$pic" "$target"
 sync_videos
 palette_update
+sync_omarchy_background "$pic"

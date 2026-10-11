@@ -293,7 +293,7 @@ Item {
      * width/height multipliers used to sit beside it, which could only ever
      * disagree with the scale they were measured against, and is gone.
      */
-    readonly property real restW: 160 * s
+    readonly property real restW: 148 * s
     readonly property real restH: 38 * s
 
     /**
@@ -328,8 +328,10 @@ Item {
         - 4 * stripGap - stripMediaGaps * stripGap
         - (Cava.active ? stripVizW : 0) - (ScreenRec.recording ? stripRecW : 0)
     readonly property real stripTitleW: stripMedia ? Math.min(stripMaxTitle, stripRoomForTitle, Math.max(stripMinTitle, stripTitleMetrics.advanceWidth)) : 0
-    readonly property real stripFixedW: stripDay.implicitWidth + stripTime.implicitWidth
+    readonly property real stripFixedW: stripClockSlotW + stripTime.implicitWidth
         + stripWs.implicitWidth + stripLay.implicitWidth + stripBat.implicitWidth
+
+    readonly property real stripClockSlotW: stripClockSlot.visible ? stripClockSlot.implicitWidth : 0
 
     readonly property real stripFaceW: {
         let w = 2 * stripPad + stripFixedW + 4 * stripGap;
@@ -1845,6 +1847,58 @@ Item {
                 function onRecordingChanged() { if (ScreenRec.recording) stripFace.recSecs = 0 }
             }
 
+            Item {
+                id: stripClockSlot
+                anchors.verticalCenter: parent.verticalCenter
+                visible: Flags.showGlyphs || Flags.clockIcon || (Flags.musicViz && Cava.active)
+                implicitWidth: Math.max(stripClockGlyph.implicitWidth, 17 * pill.s)
+                implicitHeight: Math.max(stripClockGlyph.implicitHeight, 17 * pill.s)
+
+                readonly property bool barsOn: Flags.musicViz && Cava.active
+
+                Text {
+                    anchors.centerIn: parent
+                    opacity: (Flags.showGlyphs && !stripClockSlot.barsOn) ? 1 : 0
+                    text: "時"
+                    color: Theme.cream
+                    font.family: Theme.fontJp
+                    font.weight: Theme.fontJpWeight
+                    font.pixelSize: 15 * pill.s
+                    Behavior on opacity { NumberAnimation { duration: Motion.standard; easing.type: Motion.easeStandard } }
+                }
+
+                GlyphIcon {
+                    anchors.centerIn: parent
+                    opacity: (!Flags.showGlyphs && Flags.clockIcon && !stripClockSlot.barsOn) ? 1 : 0
+                    visible: opacity > 0
+                    width: 17 * pill.s
+                    height: 17 * pill.s
+                    name: "clock"
+                    color: Theme.cream
+                    stroke: 1.7
+                    Behavior on opacity { NumberAnimation { duration: Motion.standard; easing.type: Motion.easeStandard } }
+                }
+
+                MusicBars {
+                    anchors.centerIn: parent
+                    s: pill.s
+                    visible: stripClockSlot.barsOn
+                    opacity: stripClockSlot.barsOn ? 1 : 0
+                    scale: stripClockSlot.barsOn ? 1 : 0.7
+                    Behavior on opacity { NumberAnimation { duration: Motion.standard; easing.type: Motion.easeStandard } }
+                    Behavior on scale { NumberAnimation { duration: Motion.standard; easing.type: Motion.easeStandard } }
+                }
+
+                Text {
+                    id: stripClockGlyph
+                    visible: false
+                    text: "時"
+                    font.family: Theme.fontJp
+                    font.weight: Theme.fontJpWeight
+                    font.pixelSize: 15 * pill.s
+                }
+            }
+
             Rectangle {
                 id: stripArt
                 anchors.verticalCenter: parent.verticalCenter
@@ -1925,15 +1979,6 @@ Item {
                 }
             }
 
-            Text {
-                id: stripDay
-                anchors.verticalCenter: parent.verticalCenter
-                text: clock.weekday
-                color: Theme.dim
-                font.family: Theme.font
-                font.pixelSize: 12 * pill.s
-                font.weight: Font.DemiBold
-            }
             Text {
                 id: stripTime
                 anchors.verticalCenter: parent.verticalCenter
@@ -2081,6 +2126,16 @@ Item {
                 font.family: Theme.font
                 font.pixelSize: 16 * pill.s
                 font.weight: Font.DemiBold
+                font.features: { "tnum": 1 }
+            }
+            Text {
+                visible: pill.specialView === "" && Flags.mainDisplay === "minimal" && ws.activeWs !== ""
+                anchors.verticalCenter: parent.verticalCenter
+                text: ws.activeWs
+                color: Theme.vermLit
+                font.family: Theme.font
+                font.pixelSize: 11 * pill.s
+                font.weight: Font.Bold
                 font.features: { "tnum": 1 }
             }
             Text {
